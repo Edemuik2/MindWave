@@ -1,0 +1,39 @@
+workflows:
+  mindwave-ios:
+    name: MindWave iOS Build
+    max_build_duration: 60
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      vars:
+        MODEL_URL: "https://drive.google.com/uc?export=download&id=1U3IWPH9XekGShCktzZ_QocM1GrTPcgTj"
+    scripts:
+      - name: 📦 Установка зависимостей Flutter
+        script: |
+          flutter pub get
+
+      - name: 🧠 Загрузка модели phi-2.Q4_K_M.gguf
+        script: |
+          echo "Скачиваем модель из Google Drive..."
+          mkdir -p ios/llama/models
+          curl -L -o ios/llama/models/phi-2.Q4_K_M.gguf "$MODEL_URL"
+          echo "✅ Модель сохранена в ios/llama/models/phi-2.Q4_K_M.gguf"
+
+      - name: 🛠 Сборка Xcode-проекта
+        script: |
+          cd ios
+          pod install
+          cd ..
+          flutter build ios --release --no-codesign
+
+    artifacts:
+      - build/ios/iphoneos/*.ipa
+
+    publishing:
+      email:
+        recipients:
+          - your@email.com
+        notify:
+          success: true
+          failure: true
