@@ -1,12 +1,11 @@
-// ios/Runner/LlamaChat.swift
-
 import Foundation
 
 class LlamaChat {
     let modelPath: String
 
     init() {
-        // Получаем путь к модели из Bundle (файл должен находиться в каталоге: ios/llama/models)
+        // Получаем путь к модели в бандле. Файл должен лежать в ios/llama/models,
+        // но он загружается при сборке Codemagic, так что он будет доступен после сборки.
         if let path = Bundle.main.path(forResource: "phi-2.Q4_K_M", ofType: "gguf", inDirectory: "llama/models") {
             self.modelPath = path
         } else {
@@ -18,12 +17,12 @@ class LlamaChat {
     func deepThink(prompt: String, history: String) -> String {
         guard !modelPath.isEmpty else { return "Модель не найдена." }
         
-        // Подготовка параметров: преобразуем строки в C-строки
+        // Преобразуем строки в C-строки
         let promptCStr = (prompt as NSString).utf8String
         let historyCStr = (history as NSString).utf8String
         let modelPathCStr = (modelPath as NSString).utf8String
         
-        // Вызов внешней C-функции (реализация должна быть связана с llama.cpp)
+        // Вызов внешней C-функции, реализованной в llama.mm (обёртка вокруг llama.cpp)
         if let resultCString = llama_generate(promptCStr!, historyCStr!, modelPathCStr!) {
             return String(cString: resultCString)
         }
@@ -32,7 +31,7 @@ class LlamaChat {
     
     // Функция для веб-поиска с использованием DuckDuckGo Instant Answer API
     func webSearch(prompt: String, completion: @escaping (String) -> Void) {
-        // Кодирование строки запроса для URL
+        // Кодируем строку запроса для URL
         let encodedPrompt = prompt.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
         let urlString = "https://api.duckduckgo.com/?q=\(encodedPrompt)&format=json&no_redirect=1&skip_disambig=1"
         guard let url = URL(string: urlString) else {
@@ -64,7 +63,6 @@ class LlamaChat {
     }
 }
 
-// Объявление внешней C-функции, реализуемой в llama.mm.
-// Эта функция должна быть реализована как обёртка вокруг llama.cpp.
+// Объявление внешней C-функции, которая реализована в llama.mm (она является мостом к C++ коду из llama.cpp).
 @_silgen_name("llama_generate")
 func llama_generate(_ prompt: UnsafePointer<CChar>, _ history: UnsafePointer<CChar>, _ modelPath: UnsafePointer<CChar>) -> UnsafePointer<CChar>?
